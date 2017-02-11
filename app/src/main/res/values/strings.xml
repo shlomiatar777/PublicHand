@@ -1,0 +1,151 @@
+<resources>
+    <string name="app_name">Public Hand</string>
+    <string name="title_activity_login2">Sign in</string>
+    <string name="action_settings">Public Hand</string>
+
+
+
+    <!-- LoginActivity -->
+
+    <string name="write_name">"  write your name.."</string>
+    <string name="user_name">User Name: </string>
+    <string name="write_password">"  write your password.."</string>
+    <string name="password">Password: </string>
+    <string name="login">Login</string>
+    <string name="is_user_name_already">"If you don't have username alredy "</string>
+    <string name="register_here">register here</string>
+    <string name="please_wait">Please wait..</string>
+    <string name="invalid_details">"Invalid details!"</string>
+    <string name="password_miss">Password miss!</string>
+    <string name="register_success">Register Success!</string>
+    <string name="public_hand_com">"@PublicHand.com"</string>
+
+
+    <!-- HomePageActivity -->
+
+    <string name="choose_action">Choose action</string>
+    <string name="search_product">Search new product</string>
+    <string name="create_product">"Create new product"</string>
+    <string name="show_my_offers">Show my offers </string>
+    <string name="show_my_sells">Show my sells </string>
+    <string name="type_result">type result</string>
+
+
+
+    <!-- CreateProductActivity -->
+
+    <string name="title" >"Title: "</string>
+    <string name="description">"Description: "</string>
+    <string name="start_price">"Start Price: "</string>
+    <string name="choose_picture">Choose Picture</string>
+    <string name="category">"Category: "</string>
+    <string name="sub_category">"Sub Category: "</string>
+    <string name="furniture">Furniture</string>
+    <string name="jewelry">Jewelry</string>
+    <string name="electronic_devices">Electronic Devices</string>
+    <string name="cell_phones">Cell Phones</string>
+    <string name="bicycles">Bicycles</string>
+    <string name="chairs">Chairs</string>
+    <string name="tables">Tables</string>
+    <string name="sofas">Sofas</string>
+    <string name="closets">closets</string>
+    <string name="others">others</string>
+    <string name="necklace">Necklace</string>
+    <string name="earrings">Earrings</string>
+    <string name="rings">Rings</string>
+    <string name="bracelets">Bracelets</string>
+    <string name="televisions">Televisions</string>
+    <string name="ovens">Ovens</string>
+    <string name="computers">Computers</string>
+    <string name="refrigerator">Refrigerator</string>
+    <string name="washing_machines">Washing Machines</string>
+    <string name="microwaves">Microwaves</string>
+    <string name="iphone">Iphone</string>
+    <string name="samsung_galaxy">Samsung Galaxy</string>
+    <string name="lg">LG</string>
+    <string name="bmx">BMX</string>
+    <string name="mountain_bikes">Mountain Bikes</string>
+    <string name="electronic_bikes">Electronic Bikes</string>
+    <string name="submit">Submit</string>
+    <string name="the_sell">theSell</string>
+    <string name="returnn">Return</string>
+    <string name="enter_natural_number">Please enter natural number</string>
+    <string name="please_enter_title">Please enter title</string>
+
+
+    <!-- ResultSearchActivity -->
+
+    <string name="right">&lt;</string>
+    <string name="left" >&gt;</string>
+    <string name="min_price" >MinPrice</string>
+    <string name="max_price" >MaxPrice</string>
+    <string name="create_date" >createDate</string>
+    <string name="time">time</string>
+    <string name="the_product" >theProduct</string>
+    <string name="current_price" >currentPrice</string>
+    <string name="image">image</string>
+    <string name="the_seller">theSeller</string>
+    <string name="descriptionDB">"description"</string>
+    <string name="titleDB">title</string>
+    <string name="categoryDB">"category"</string>
+    <string name="sub_categoryDB">"subCategory"</string>
+    <string name="category_intent">"Category"</string>
+    <string name="sub_category_intent">"SubCategory"</string>
+    <string name="all_offers">allOffers</string>
+    <string name="id">id</string>
+    <string name="users">Users</string>
+
+
+    <!-- SearchProductActivity -->
+    <string name="from_price">From Price: </string>
+    <string name="until_price">Until Price: </string>
+    <string name="search">SEARCH</string>
+    <string name="please_enter_number">Please Enter natural number or nothing in "From Price" field</string>
+    <string name="prices_validation">the field "Until Price" must be high then the field "From Price"</string>
+
+    <!-- SellProductActivity -->
+    <string name="price">Price: </string>
+    <string name="location">Location: </string>
+    <string name="every_offer_raise">"every offer raise in "</string>
+    <string name="time_left">Time Left: </string>
+    <string name="hours">Hours: </string>
+    <string name="minutes">"  Minutes: "</string>
+    <string name="the_sell_is_over">The sell is over!</string>
+    <string name="seller_name">"Seller Name: "</string>
+    <string name="phone">Phone: </string>
+    <string name="offer">Offer</string>
+
+
+
+
+
+    <!-- RegisterActivity -->
+
+    <string name="first_name">"First Name: "</string>
+    <string name="last_name">"Last Name: "</string>
+    <string name="confirm_password">" Confirm Password: "</string>
+    <string name="jerusalem">Jerusalem</string>
+    <string name="haifa">Haifa and the North</string>
+    <string name="tel_aviv">Tel Aviv and the Center</string>
+    <string name="the_sharon">The Sharon</string>
+    <string name="the_shfela">The Shfela and the North</string>
+    <string name="userName_already_exist">UserName already exist</string>
+    <string name="login_faild">Login faild! please try again</string>
+    <string name="please_enter_first_name">Please enter first name</string>
+    <string name="please_enter_last_name">Please enter last name</string>
+    <string name="please_enter_number_only_10_digits">Please enter number only (10 digits)</string>
+    <string name="please_enter_user_name">Please enter user name</string>
+    <string name="please_enter_password_at_least_6_digits">Please enter password (at least 6 digits)</string>
+    <string name="please_enter_confirm_password">Please enter confirm password</string>
+    <string name="please_match_between_password_and_confirm_password">Please match between password and confirm password</string>
+
+
+    <!-- SettingUserDetailsActivity -->
+
+    <string name="first_nameDB">"firstName"</string>
+    <string name="last_nameDB">"lasttName"</string>
+    <string name="locationDB">location</string>
+    <string name="phoneDB">phone</string>
+
+
+</resources>

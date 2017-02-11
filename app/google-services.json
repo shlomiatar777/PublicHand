@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "847814226212",
+    "firebase_url": "https://publichand-b8d82.firebaseio.com",
+    "project_id": "publichand-b8d82",
+    "storage_bucket": "publichand-b8d82.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:847814226212:android:d0392d49df5ab592",
+        "android_client_info": {
+          "package_name": "com.example.shlomi.publichand"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "847814226212-lr6t1nibhaqlfjsu1bc10jb7i7jjmb1p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.shlomi.publichand",
+            "certificate_hash": "EB0537755B7AB2E345678DE08F95EFC1058D00FD"
+          }
+        },
+        {
+          "client_id": "847814226212-fqm22244pelqio1hucksrmbd1f21dnq3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfMOY9jTmWTYVH3BMyv0aCDzsqBmFjxck"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "847814226212-fqm22244pelqio1hucksrmbd1f21dnq3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
