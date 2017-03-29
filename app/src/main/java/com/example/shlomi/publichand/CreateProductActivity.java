@@ -1,7 +1,12 @@
 package com.example.shlomi.publichand;
 
+import android.Manifest;
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -9,10 +14,13 @@ import android.graphics.Point;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
+import android.provider.MediaStore;
+import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Base64;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.Menu;
@@ -30,31 +38,44 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.google.gson.Gson;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 
+import Logic.FirebaseAuthenticationController;
+import Logic.FirebaseDB_Controller;
 import Logic.Product;
 import Logic.Sell;
 
 public class CreateProductActivity extends AppCompatActivity {
-    FirebaseAuth fbAuth;
-    DatabaseReference dbref;
+    FirebaseAuthenticationController fbAuth;
+    FirebaseStorage fbStore;
+    FirebaseDB_Controller dbController;
     ArrayAdapter<String> AllCategoriesAdapter, FurnitureAdapter,  JewelryAdapter, ElectronicDevicesAdapter,  CellPhonesAdapter, BicyclesAdapter;
     Spinner categorySpn;
     Spinner subCategorySpn;
     ImageView selectedImage;
     Bitmap b;
+    Product theProduct;
     TableRow tblTitle, tblDescription, tblPrice, tblCategories, tblSubCategories;
-    LinearLayout llImage , llSubmit;
+    LinearLayout llImage , llSubmit , llAddPicture;
     TextView validationTxt;
-    final static int RESULT_LOAD_IMAGE =1;
+    boolean isKey;
+
+    String key;
+    final static int LOAD_EXIST_IMAGE =1;
+    final static int LOAD_NEW_IMAGE =2;
+    final static  int HALF_HOUR_BEFORE_END =60*60*47+60*30;
+
     private int width,height;
     Activity thisActivity= this;
 
@@ -71,15 +92,17 @@ public class CreateProductActivity extends AppCompatActivity {
 
 
         //init global params
-        dbref= FirebaseDatabase.getInstance().getReference();
-        fbAuth =FirebaseAuth.getInstance();
+        fbAuth = new FirebaseAuthenticationController();
+        fbStore = FirebaseStorage.getInstance();
+        dbController = new FirebaseDB_Controller();
+        isKey=false;
         final int FONT_SIZE_LABEL =height/85;
 
 
         //setting main layout
         LinearLayout llMain = new LinearLayout(this);
         llMain.setOrientation(LinearLayout.VERTICAL);
-        Drawable image = ContextCompat.getDrawable(this,R.drawable.background2);
+        final Drawable image = ContextCompat.getDrawable(this,R.drawable.background2);
         llMain.setBackgroundDrawable(image);
         setContentView(llMain);
 
@@ -107,11 +130,40 @@ public class CreateProductActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent i = new Intent(Intent.ACTION_PICK,android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                startActivityForResult(i, RESULT_LOAD_IMAGE);
+                startActivityForResult(i, LOAD_EXIST_IMAGE);
             }
         });
 
-        llImage.addView(galleryBtn);
+        Button cameraBtn = new Button(this);
+        cameraBtn.setText(getString(R.string.make_picture));
+        cameraBtn.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        cameraBtn.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
+            @Override
+            public void onClick(View v) {
+
+                if (checkSelfPermission(Manifest.permission.CAMERA)
+                        != PackageManager.PERMISSION_GRANTED) {
+
+                    requestPermissions(new String[]{Manifest.permission.CAMERA},
+                            LOAD_NEW_IMAGE);
+                }
+                else {
+                    Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    startActivityForResult(i, LOAD_NEW_IMAGE);
+                }
+            }
+        });
+
+
+        llAddPicture = new LinearLayout(this);
+        llAddPicture.setOrientation(LinearLayout.HORIZONTAL);
+        llAddPicture.setGravity(Gravity.CENTER);
+
+        llAddPicture.addView(galleryBtn);
+        llAddPicture.addView(cameraBtn);
+
+        llImage.addView(llAddPicture);
         llImage.addView(selectedImage);
 
 
@@ -205,21 +257,22 @@ public class CreateProductActivity extends AppCompatActivity {
         submitBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Product theProduct;
-                Sell theSell;
                 if (isValidation()){
-                    theProduct = makeProduct();
-                    String key =  dbref.child(theProduct.getCategory()).child(theProduct.getSubCategory()).push().getKey();
-                    theSell = new Sell(theProduct, new Date(), "", key);
-                    dbref.child(theProduct.getCategory()).child(theProduct.getSubCategory()).child(key).setValue(theSell);
-                    Intent intentData = new Intent(thisActivity,SellProductActivity.class);
-                    String fromJsonToStr = new Gson().toJson(theSell);
-                    intentData.putExtra(getString(R.string.the_sell),fromJsonToStr);
-                    finish();
-                   startActivity(intentData);
+                    if (!isKey) {
+                        key = dbController.makeKey(categorySpn, subCategorySpn);
+                        isKey = true ;
+                    }
+                    if(b==null) {
+                       setImage(null,key);
+                    }
+                    else {
+                        uploadToStorage(key);
+                    }
+
                 }
             }
         });
+
         llSubmit.addView(submitBtn);
 
 
@@ -310,36 +363,75 @@ public class CreateProductActivity extends AppCompatActivity {
 
     //create product from the user input
     public Product makeProduct (){
-        Product theProduct;
+        final Product theProduct;
         String title =((EditText) tblTitle.getChildAt(1)).getText()+"";
         String description =((EditText) tblDescription.getChildAt(1)).getText()+"";
         int price =Integer.parseInt(((EditText) tblPrice.getChildAt(1)).getText()+"");
         String categoryStr =  categorySpn.getSelectedItem().toString();
         String subCategoryStr =  subCategorySpn.getSelectedItem().toString();
-        String image;
-        if (b==null) {
-            image ="";
-        }
-        else{
-            ByteArrayOutputStream bitMapToByte =  new ByteArrayOutputStream();
-            b.compress(Bitmap.CompressFormat.PNG, 100,bitMapToByte);
-            b.recycle();
-            byte[] byteArr = bitMapToByte.toByteArray();
-            image = Base64.encodeToString(byteArr , Base64.DEFAULT);
-        }
-       String userID = fbAuth.getCurrentUser().getUid();
-
-        theProduct= new Product(userID , categoryStr , subCategoryStr , description , image , price, title);
+        String userID = fbAuth.getCurrentUid();
+        theProduct= new Product(userID , categoryStr , subCategoryStr , description , "" , price, title);
         return theProduct;
     }
 
 
 
+    public void setImage(Uri uri, String key){
+
+        theProduct = makeProduct();
+        if (uri !=null) {
+            theProduct.setImage(b.getByteCount() + "");
+        }
+        Sell theSell = new Sell(theProduct, new Date(), "", key);
+        dbController.saveSell(theProduct, theSell, key);
+        scheduleNotification(HALF_HOUR_BEFORE_END);  //47.5 hours
+        Intent intentData = new Intent(thisActivity,SellProductActivity.class);
+        String fromJsonToStr = new Gson().toJson(theSell);
+        intentData.putExtra(getString(R.string.the_sell),fromJsonToStr);
+        finish();
+        startActivity(intentData);
+    }
+
+    public void uploadToStorage (final String key){
+        StorageReference storeRef = fbStore.getReferenceFromUrl(getString(R.string.product_path)+key+getString(R.string.jpg));
+        ByteArrayOutputStream bitMapToByte =  new ByteArrayOutputStream();
+        b.compress(Bitmap.CompressFormat.PNG,0,bitMapToByte);
+        byte[] byteArr = bitMapToByte.toByteArray();
+        UploadTask uploadTask = storeRef.putBytes(byteArr);
+        uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            @Override
+            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                Uri uri = taskSnapshot.getDownloadUrl();
+                setImage(uri,key);
+            }
+        });
+        uploadTask.addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                validationTxt.setText(getString(R.string.upload_image_failed));
+            }
+        });
+    }
+
+
+    //delay is after how much time(in millis) from current time you want to schedule the notification
+    public void scheduleNotification(int delay) {
+      AlarmManager alarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+      Intent intent = new Intent(getString(R.string.display_notification));
+        intent.addCategory(getString(R.string.category_default));
+        int requestCode = 100;
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.SECOND, delay);
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+
+    }
+
+
     //create tool bar
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.options_menu, menu);
-        return true;
+        return fbAuth.createToolBar(this, menu);
     }
 
 
@@ -351,29 +443,30 @@ public class CreateProductActivity extends AppCompatActivity {
         // Handle action bar actions click
 
         super.onOptionsItemSelected(item);
-        if(item.getItemId() == R.id.edit){
-            Intent intentData = new Intent(thisActivity,SettingUserDetailsActivity.class);
-            startActivity(intentData);
-        }
-
-
-        else if(item.getItemId() == R.id.sign_out){
-            fbAuth.signOut();
-            Intent intentData = new Intent(this,LoginActivity.class);
-            intentData.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            finish();
-            startActivity(intentData);
-        }
-        return true;
+        return  fbAuth.executeToolBarOption(this,item);
 
     }
+
+
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == LOAD_NEW_IMAGE) {
+            if ( grantResults.length >0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                startActivityForResult(i, LOAD_NEW_IMAGE);
+            }
+        }
+    }
+
 
 
     //check if we got a picture from the gallery
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && null != data) {
+        if (requestCode == LOAD_EXIST_IMAGE && resultCode == RESULT_OK && null != data) {
             Uri selectedImageUri = data.getData();
             try {
                 b = BitmapFactory.decodeStream(getContentResolver().openInputStream(selectedImageUri));
@@ -382,6 +475,17 @@ public class CreateProductActivity extends AppCompatActivity {
             }
            Bitmap bResize = Bitmap.createScaledBitmap(b,width/2,height/4,false);
             selectedImage.setImageBitmap(bResize);
+
+        }
+        else if (requestCode == LOAD_NEW_IMAGE && resultCode == RESULT_OK){
+            b = (Bitmap) data.getExtras().get(getString(R.string.data));
+            Bitmap bResize = Bitmap.createScaledBitmap(b,width/2,height/4,false);
+            selectedImage.setImageBitmap(bResize);
         }
     }
+
+
+
+
+
 }

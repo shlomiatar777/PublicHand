@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.Menu;
@@ -33,25 +34,29 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 
+import Logic.FirebaseAuthenticationController;
+import Logic.FirebaseDB_Controller;
 import Logic.Product;
 import Logic.Sell;
 
 public class ResultSearchActivity extends AppCompatActivity {
-    FirebaseAuth fbAuth;
-    DatabaseReference dbref;
+    FirebaseAuthenticationController fbAuth;
     ProgressDialog progressDialog ;
     ArrayList<Sell> allDemandedSells;
     LinearLayout llAllCurrentResult;
     TextView currentPageLbl;
+    FirebaseDB_Controller dbController;
     int currentPage;
-    final long TWO_DAYS = 2*24*60*60*1000;
     final int PRODUCTS_PER_PAGE =10;
     final int NOT_EXIST =-1;
-
     private int width,height;
-    String allSellsId;
+    private String allSellsId;
     Date currentDate;
     Activity thisActivity = this;
+    LinearLayout llPage;
+    TextView noResultTxt ;
+    Button previous, forward;
+    public static enum SearchType {SEARCH_PRODUCT, SHOW_MY_OFFERS, SHOW_MY_SELLS }
 
 
     @Override
@@ -73,9 +78,10 @@ public class ResultSearchActivity extends AppCompatActivity {
         final int FONT_SIZE_LABEL =height/85;
         final int FONT_SIZE_TEXT =2*FONT_SIZE_LABEL/3;
 
-        dbref= FirebaseDatabase.getInstance().getReference();
-        fbAuth =FirebaseAuth.getInstance();
+
+        fbAuth =new FirebaseAuthenticationController();
         progressDialog = new ProgressDialog(this);
+        dbController = new FirebaseDB_Controller();
         allDemandedSells = new ArrayList<>();
         currentPage = 1;
         currentDate = new Date();
@@ -95,7 +101,7 @@ public class ResultSearchActivity extends AppCompatActivity {
         llAllCurrentResult.setGravity(Gravity.CENTER);
 
 
-        LinearLayout llPage = new LinearLayout(this);
+        llPage = new LinearLayout(this);
         llPage.setOrientation(LinearLayout.HORIZONTAL);
         llPage.setGravity(Gravity.CENTER);
 
@@ -104,8 +110,9 @@ public class ResultSearchActivity extends AppCompatActivity {
         currentPageLbl.setTextSize(FONT_SIZE_LABEL);
 
         //set buttons forward and preview
-        Button previous = new Button(this);
+        previous = new Button(this);
         previous.setText(getString(R.string.right));
+
         previous.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -118,8 +125,9 @@ public class ResultSearchActivity extends AppCompatActivity {
         });
 
 
-        Button forward = new Button(this);
+        forward = new Button(this);
         forward.setText(getString(R.string.left));
+
         forward.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -131,25 +139,24 @@ public class ResultSearchActivity extends AppCompatActivity {
             }
         });
 
-        llPage.addView(previous);
-        llPage.addView(currentPageLbl);
-        llPage.addView(forward);
+     //   llPage.addView(previous);
+     //   llPage.addView(currentPageLbl);
+     //   llPage.addView(forward);
 
         // get number from other activities , 1 means search products
         //                                    2 means search my offers on products
         //                                    3 means search my products which i sell
         final int searchType =getIntent().getIntExtra(getString(R.string.type_result),-1);
-
-                switch (searchType) {
-                    case 1:
+                switch (SearchType.values()[searchType]) {
+                    case SEARCH_PRODUCT:
                         searchProduct();
                         break;
 
-                    case 2:
+                    case SHOW_MY_OFFERS:
                         showMyOffers();
                         break;
 
-                    case 3:
+                    case SHOW_MY_SELLS:
                         showMySells();
                         break;
                 }
@@ -168,192 +175,55 @@ public class ResultSearchActivity extends AppCompatActivity {
         final String subcategory = getIntent().getStringExtra(getString(R.string.sub_category_intent));
         final int minPrice = getIntent().getIntExtra(getString(R.string.min_price), NOT_EXIST);
         final int maxPrice = getIntent().getIntExtra(getString(R.string.max_price), NOT_EXIST);
-        dbref.child(category).child(subcategory).addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                allDemandedSells.clear();
-                allSellsId="";
-                boolean isDemandedSell;
-                for (DataSnapshot s : dataSnapshot.getChildren()) {
-                    isDemandedSell = false;
-                    long time = s.child(getString(R.string.create_date)).child(getString(R.string.time)).getValue(Long.class);
-                    Date currentDate = new Date();
-                    int diffTime = (int)TWO_DAYS;
-                    if (currentDate.getTime() - time <= diffTime && currentDate.getTime() - time > 0) {
-                        int currentPrice = s.child(getString(R.string.the_product)).child(getString(R.string.current_price)).getValue(Integer.class);
-                        if (minPrice == NOT_EXIST && maxPrice == NOT_EXIST)
-                            isDemandedSell = true;
-                        else if ((minPrice != NOT_EXIST && minPrice <= currentPrice) && maxPrice == NOT_EXIST)
-                            isDemandedSell = true;
-                        else if (minPrice == NOT_EXIST && (maxPrice >= currentPrice && maxPrice != NOT_EXIST))
-                            isDemandedSell = true;
-                        else if ((minPrice != NOT_EXIST && minPrice <= currentPrice) && (maxPrice >= currentPrice && maxPrice != NOT_EXIST))
-                            isDemandedSell = true;
-
-                        if (isDemandedSell) {
-
-                            Sell theSell = makeSell(s);
-
-                            allDemandedSells.add(theSell);
-                            allSellsId+=theSell.getId();
-
-                        }
-                    }
-                }
-                //sort by date
-                Collections.sort(allDemandedSells, new Comparator<Sell>() {
-                    @Override
-                    public int compare(Sell o1, Sell o2) {
-                        return (int) (o1.getCreateDate().getTime() - o2.getCreateDate().getTime());
-                    }
-                });
 
 
-                showCurrentPage();
-                progressDialog.dismiss();
-
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
+        dbController.searchProduct(this , category, subcategory, minPrice, maxPrice);
     }
 
 
 
     // search my offers on products
     public void showMyOffers(){
-        dbref.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                allSellsId ="";
-                allDemandedSells.clear();
-                for (DataSnapshot s : dataSnapshot.getChildren()) {
-                    if (!s.getKey().equals(getString(R.string.users))) {
-                        for (DataSnapshot subCategory : s.getChildren()) {
-                            for (DataSnapshot product : subCategory.getChildren()) {
-                                String allOffers = product.child(getString(R.string.all_offers)).getValue(String.class);
-                                String Uid = fbAuth.getCurrentUser().getUid();
-                                int match = allOffers.indexOf(Uid);
-                                if (match != NOT_EXIST) {
-                                    Sell theSell =  makeSell(product);
-                                    allDemandedSells.add(theSell);
-
-                                    if (match == 1) {
-                                        allSellsId+=theSell.getId();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                //sort by date, if sell is over it move to end of the list, also keep the highest offers in different list
-                // it suppose to color in blue product's titles in the result page when the connected user offer the
-                //current highest offer, else it color in red
-                Collections.sort(allDemandedSells, new Comparator<Sell>() {
-                    @Override
-                    public int compare(Sell o1, Sell o2) {
-                        long dif1 = o1.getCreateDate().getTime() - currentDate.getTime() + TWO_DAYS;
-                        long dif2 = o2.getCreateDate().getTime() - currentDate.getTime()+ TWO_DAYS;
-                        if (dif1>0 && dif2<0 )
-                            return -1;
-                        else if(dif1<0 && dif2>0)
-                            return 1;
-                        return (int) (o1.getCreateDate().getTime() - o2.getCreateDate().getTime());
-                    }
-                });
-
-                showCurrentPage();
-                progressDialog.dismiss();
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
+        dbController.showMyOffers(this);
     }
 
 
 
     // search my products which i sell
     public void showMySells(){
-        dbref.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                allSellsId ="";
-                allDemandedSells.clear();
-                for (DataSnapshot s : dataSnapshot.getChildren()) {
-                    if (!s.getKey().equals(getString(R.string.users))) {
-                        for (DataSnapshot subCategory : s.getChildren()) {
-                            for (DataSnapshot product : subCategory.getChildren()) {
-                                String sellerId = product.child(getString(R.string.the_product)).child(getString(R.string.the_seller)).getValue(String.class);
-                                String currentUserId  = fbAuth.getCurrentUser().getUid();
-                                if(sellerId.equals(currentUserId)){
-                                    Sell theSell = makeSell(product);
-                                    allDemandedSells.add(theSell);
-                                    allSellsId+=theSell.getId();
-                                }
-                            }
-                        }
-                    }
-                }
-                //sort by date, if sell is over it move to end of the list
-                Collections.sort(allDemandedSells, new Comparator<Sell>() {
-                    @Override
-                    public int compare(Sell o1, Sell o2) {
-                        long dif1 = o1.getCreateDate().getTime() - currentDate.getTime() +TWO_DAYS;
-                        long dif2 = o2.getCreateDate().getTime() - currentDate.getTime()+ TWO_DAYS;
-                        if (dif1>0 && dif2<0 )
-                            return -1;
-                        else if(dif1<0 && dif2>0)
-                            return 1;
-                        return (int) (o1.getCreateDate().getTime() - o2.getCreateDate().getTime());
-                    }
-                });
-
-                showCurrentPage();
-                progressDialog.dismiss();
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
-    }
-
-
-
-    //create Sell from firebase database by query
-    public Sell makeSell(DataSnapshot product){
-
-        String description = product.child(getString(R.string.the_product)).child(getString(R.string.descriptionDB)).getValue(String.class);
-        String imageStr = product.child(getString(R.string.the_product)).child(getString(R.string.image)).getValue(String.class);
-        String sellerId = product.child(getString(R.string.the_product)).child(getString(R.string.the_seller)).getValue(String.class);
-        int currentPrice = product.child(getString(R.string.the_product)).child(getString(R.string.current_price)).getValue(Integer.class);
-        String title = product.child(getString(R.string.the_product)).child(getString(R.string.titleDB)).getValue(String.class);
-        String category = product.child(getString(R.string.the_product)).child(getString(R.string.categoryDB)).getValue(String.class);
-        String subCategory = product.child(getString(R.string.the_product)).child(getString(R.string.sub_categoryDB)).getValue(String.class);
-
-        Product p = new Product(sellerId, category, subCategory, description, imageStr, currentPrice, title);
-
-        long time = product.child(getString(R.string.create_date)).child(getString(R.string.time)).getValue(Long.class);
-        String sellId = product.child(getString(R.string.id)).getValue(String.class);
-        String allOffers = product.child(getString(R.string.all_offers)).getValue(String.class);
-        Sell theSell = new Sell(p, new Date(time), allOffers, sellId);
-        return theSell;
+        dbController.showMySells(this);
     }
 
 
 
     //UI of current page
      public void showCurrentPage(){
+         llPage.removeAllViews();
          llAllCurrentResult.removeAllViews();
          int totalDemandedSells =  allDemandedSells.size();
+         if (totalDemandedSells==0){
+             noResultTxt =  new TextView(this);
+             noResultTxt.setTextSize(height/66);
+             noResultTxt.setText(getString(R.string.no_result));
+             llAllCurrentResult.addView(noResultTxt);
+             return;
+         }
+         if (totalDemandedSells<PRODUCTS_PER_PAGE ){
+             llPage.addView(currentPageLbl);
+         }
+         else if (currentPage==1){
+             llPage.addView(currentPageLbl);
+             llPage.addView(forward);
+         }
+         else if ((currentPage)*PRODUCTS_PER_PAGE>totalDemandedSells){
+             llPage.addView(previous);
+             llPage.addView(currentPageLbl);
+         }
+         else{
+             llPage.addView(previous);
+             llPage.addView(currentPageLbl);
+             llPage.addView(forward);
+         }
          int i ;
          int limit;
          if(PRODUCTS_PER_PAGE*currentPage <= totalDemandedSells)
@@ -387,11 +257,11 @@ public class ResultSearchActivity extends AppCompatActivity {
 
 
 
+
     //create tool bar
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.options_menu, menu);
-        return true;
+        return fbAuth.createToolBar(this, menu);
     }
 
 
@@ -403,21 +273,29 @@ public class ResultSearchActivity extends AppCompatActivity {
         // Handle action bar actions click
 
         super.onOptionsItemSelected(item);
-        if(item.getItemId() == R.id.edit){
-            Intent intentData = new Intent(thisActivity,SettingUserDetailsActivity.class);
-            startActivity(intentData);
-        }
-
-
-        else if(item.getItemId() == R.id.sign_out){
-            fbAuth.signOut();
-            Intent intentData = new Intent(this,LoginActivity.class);
-            intentData.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            finish();
-            startActivity(intentData);
-        }
-        return true;
+        return  fbAuth.executeToolBarOption(this,item);
 
     }
 
+
+
+    public ArrayList<Sell> getAllDemandedSells() {
+        return allDemandedSells;
+    }
+
+    public void setAllDemandedSells(ArrayList<Sell> allDemandedSells) {
+        this.allDemandedSells = allDemandedSells;
+    }
+
+    public String getAllSellsId() {return allSellsId;}
+
+    public void setAllSellsId(String allSellsId) {
+        this.allSellsId = allSellsId;
+    }
+
+    public ProgressDialog getProgressDialog() {return progressDialog;}
+
+    public void setProgressDialog(ProgressDialog progressDialog) {
+        this.progressDialog = progressDialog;
+    }
 }

@@ -32,11 +32,13 @@ import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
 
+import Logic.FirebaseDB_Controller;
+
 public class SettingUserDetailsActivity extends AppCompatActivity {
 
     ProgressDialog progressDialog;
     FirebaseAuth fbAuth;
-    DatabaseReference dbref;
+    FirebaseDB_Controller dbController;
     TableRow tblRegisterFirstName, tblRegisterLastName, tblRegisterPhone, tblRegisterLocation;
     TextView messageLbl;
 
@@ -63,7 +65,7 @@ public class SettingUserDetailsActivity extends AppCompatActivity {
         progressDialog = new ProgressDialog(this);
         Spinner locationSpn;
         fbAuth = FirebaseAuth.getInstance();
-        dbref= FirebaseDatabase.getInstance().getReference();
+        dbController = new FirebaseDB_Controller();
 
 
         //setting main layout
@@ -128,10 +130,11 @@ public class SettingUserDetailsActivity extends AppCompatActivity {
                 valid = isValidRegister();
                 message= makeErrorMessage(valid);
                 messageLbl.setText(message);
-                if(message.equals("")){
+                if(message.equals(getString(R.string.empty_string))){
                     progressDialog.setMessage(getString(R.string.please_wait));
                     progressDialog.show();
                     setDetails();
+                    messageLbl.setText(getString(R.string.change_user_details));
                     progressDialog.dismiss();
 
                 }
@@ -164,7 +167,7 @@ public class SettingUserDetailsActivity extends AppCompatActivity {
 
         TextView tv = makeTextView(str,fontSize, colorTxt, typeFace);
 
-        EditText et = makeTxt(colorBackground,"",2*fontSize/3, width/30);
+        EditText et = makeTxt(colorBackground,getString(R.string.empty_string),2*fontSize/3, width/30);
 
         if(isPassword){
             et.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
@@ -218,17 +221,29 @@ public class SettingUserDetailsActivity extends AppCompatActivity {
     // get user's input and edit the user details in firebase database
     public void setDetails(){
 
-        if (!firstName.equals(""))
-         dbref.child(getString(R.string.users)).child(userId).child(getString(R.string.first_nameDB)).setValue(firstName);
 
-        if (!lastName.equals(""))
-            dbref.child(getString(R.string.users)).child(userId).child(getString(R.string.last_nameDB)).setValue(lastName);
+        firstName = ((EditText) tblRegisterFirstName.getChildAt(1)).getText()+getString(R.string.empty_string);
+        lastName = ((EditText) tblRegisterLastName.getChildAt(1)).getText()+getString(R.string.empty_string);
+        location = ((Spinner) tblRegisterLocation.getChildAt(1)).getSelectedItem().toString();
 
-        dbref.child(getString(R.string.users)).child(userId).child(getString(R.string.locationDB)).setValue(location);
 
-        if (!phone.equals("")) {
-                dbref.child(getString(R.string.users)).child(userId).child(getString(R.string.phoneDB)).setValue(phone);
+        if (!firstName.equals(getString(R.string.empty_string)))
+            dbController.updateFirstNameUser(this, firstName);
+        if (!lastName.equals(getString(R.string.empty_string)))
+           dbController.updateLastNameUser(this, lastName);
+
+        dbController.updateLocation(this, location);
+
+        if (!phone.equals(getString(R.string.empty_string))) {
+               dbController.updatePhone(this, phone);
         }
+
+        firstName = getString(R.string.empty_string);
+        lastName =getString(R.string.empty_string);
+        phone = getString(R.string.empty_string);
+        ((EditText) tblRegisterFirstName.getChildAt(1)).setText(firstName);
+        ((EditText) tblRegisterLastName.getChildAt(1)).setText(lastName);
+        ((EditText) tblRegisterPhone.getChildAt(1)).setText(phone);
     }
 
 
@@ -238,26 +253,14 @@ public class SettingUserDetailsActivity extends AppCompatActivity {
 
         int valid = 0;
         userId = fbAuth.getCurrentUser().getUid();
-        firstName = ((EditText) tblRegisterFirstName.getChildAt(1)).getText()+"";
-        lastName = ((EditText) tblRegisterLastName.getChildAt(1)).getText()+"";
-        phone = ((EditText) tblRegisterPhone.getChildAt(1)).getText()+"";
-        location = ((Spinner) tblRegisterLocation.getChildAt(1)).getSelectedItem().toString();
+        phone = ((EditText) tblRegisterPhone.getChildAt(1)).getText()+getString(R.string.empty_string);
 
-        if (!firstName.equals(""))
-            dbref.child(getString(R.string.users)).child(userId).child(getString(R.string.first_nameDB)).setValue(firstName);
 
-        if (!lastName.equals(""))
-            dbref.child(getString(R.string.users)).child(userId).child(getString(R.string.last_nameDB)).setValue(lastName);
 
-        dbref.child(getString(R.string.users)).child(userId).child(getString(R.string.locationDB)).setValue(location);
-
-        if (!phone.equals("")) {
+        if (!phone.equals(getString(R.string.empty_string))) {
             if (!(phone.matches("[0-9]+") && phone.length() == 10))
                 return valid = 1;
-            else
-                dbref.child(getString(R.string.users)).child(userId).child(getString(R.string.phoneDB)).setValue(phone);
         }
-
         return  valid;
     }
 
@@ -265,7 +268,7 @@ public class SettingUserDetailsActivity extends AppCompatActivity {
 
     //make fit error input validation
     public String makeErrorMessage(int valid){
-        String message="";
+        String message=getString(R.string.empty_string);
         switch (valid){
             case  0:
                 break;
@@ -276,6 +279,10 @@ public class SettingUserDetailsActivity extends AppCompatActivity {
         return  message;
     }
 
+
+    public String getUserId(){
+        return userId;
+    }
 
 
     //create options in tool bar

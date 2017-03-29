@@ -18,7 +18,8 @@
     <string name="invalid_details">"Invalid details!"</string>
     <string name="password_miss">Password miss!</string>
     <string name="register_success">Register Success!</string>
-    <string name="public_hand_com">"@PublicHand.com"</string>
+    <string name="public_hand_com">"@publichand.com"</string>
+
 
 
     <!-- HomePageActivity -->
@@ -38,6 +39,7 @@
     <string name="description">"Description: "</string>
     <string name="start_price">"Start Price: "</string>
     <string name="choose_picture">Choose Picture</string>
+    <string name="make_picture">Make Picture</string>
     <string name="category">"Category: "</string>
     <string name="sub_category">"Sub Category: "</string>
     <string name="furniture">Furniture</string>
@@ -71,6 +73,16 @@
     <string name="returnn">Return</string>
     <string name="enter_natural_number">Please enter natural number</string>
     <string name="please_enter_title">Please enter title</string>
+    <string name="upload_image_failed">Upload Image Failed!</string>
+    <string name="jpg">.jpg</string>
+    <string name="product_path">gs://publichand-b8d82.appspot.com/</string>
+    <string name="content">30 LAST MINUTES TO SELL! </string>
+    <string name="title_notification">Public Hand</string>
+    <string name="display_notification">android.media.action.DISPLAY_NOTIFICATION</string>
+    <string name="category_default">android.intent.category.DEFAULT</string>
+    <string name="data">data</string>
+
+
 
 
     <!-- ResultSearchActivity -->
@@ -94,6 +106,8 @@
     <string name="all_offers">allOffers</string>
     <string name="id">id</string>
     <string name="users">Users</string>
+    <string name="no_result">NO RESULT!</string>
+    <string name="change_user_details">Successfully Change!</string>
 
 
     <!-- SearchProductActivity -->
@@ -146,6 +160,7 @@
     <string name="last_nameDB">"lasttName"</string>
     <string name="locationDB">location</string>
     <string name="phoneDB">phone</string>
+    <string name="empty_string"></string>
 
 
 </resources>

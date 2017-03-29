@@ -32,5 +32,5 @@ dependencies {
     compile 'com.google.firebase:firebase-core:9.2.0'
     compile 'com.google.firebase:firebase-auth:9.2.0'
     compile 'com.google.firebase:firebase-database:9.2.0'
-
+    compile 'com.google.firebase:firebase-storage:9.2.0'
 }

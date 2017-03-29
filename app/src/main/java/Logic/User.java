@@ -10,16 +10,14 @@ public class User {
     private String phone;
     private String location;
     private String userName;
-    private String password;
 
 
-    public User(String firstName, String lasttName, String location, String phone, String userName, String password) {
+    public User(String firstName, String lasttName, String location, String phone, String userName) {
         this.firstName = firstName;
         this.lasttName = lasttName;
         this.location = location;
         this.phone = phone;
         this.userName = userName;
-        this.password = password;
     }
 
 
@@ -63,11 +61,4 @@ public class User {
         this.userName = userName;
     }
 
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
 }

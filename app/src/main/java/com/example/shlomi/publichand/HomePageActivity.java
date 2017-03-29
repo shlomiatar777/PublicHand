@@ -27,14 +27,13 @@ import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
 
+
 public class HomePageActivity extends AppCompatActivity {
 
     FirebaseAuth fbAuth;
     Activity thisActivity = this;
     LinearLayout llSearchProduct, llCreateProduct, llOffersList , llSellsList;
     int width , height;
-    final int FIND_MY_OFFERS=2;
-    final int FIND_MY_SELLS=3;
 
 
 
@@ -143,7 +142,7 @@ public class HomePageActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intentData = new Intent(thisActivity,ResultSearchActivity.class);
-                intentData.putExtra(getString(R.string.type_result),FIND_MY_OFFERS);
+                intentData.putExtra(getString(R.string.type_result), ResultSearchActivity.SearchType.SHOW_MY_OFFERS.ordinal());
                 startActivity(intentData);
             }
         });
@@ -158,7 +157,7 @@ public class HomePageActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intentData = new Intent(thisActivity,ResultSearchActivity.class);
-                intentData.putExtra(getString(R.string.type_result),FIND_MY_SELLS);
+                intentData.putExtra(getString(R.string.type_result), ResultSearchActivity.SearchType.SHOW_MY_SELLS.ordinal());
                 startActivity(intentData);
             }
         });

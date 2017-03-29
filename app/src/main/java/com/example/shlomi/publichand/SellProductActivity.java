@@ -11,7 +11,6 @@ import android.graphics.drawable.Drawable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Base64;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.Menu;
@@ -25,34 +24,41 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
+
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.Date;
 
+import Logic.FirebaseAuthenticationController;
+import Logic.FirebaseDB_Controller;
 import Logic.Sell;
 import Logic.User;
 
 public class SellProductActivity extends AppCompatActivity {
-    FirebaseAuth fbAuth;
+    FirebaseAuthenticationController fbAuth;
+    FirebaseStorage fbStore;
+    FirebaseDB_Controller dbController;
     Sell theSell;
     Activity thisActivity = this;
     int width,height;
     int currentPrice;
     final long TWO_DAYS = 2*24*60*60*1000;
-    DatabaseReference dbref;
     User theUser;
     TextView makeOfferLbl;
     String allOffersStr;
-
-    TableRow tblSellerDetails1;
-    LinearLayout llSellerDetails2;
+    ImageView productImage;
+    TableRow tblSellerDetails;
+    LinearLayout llSellerDetails;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,9 +75,9 @@ public class SellProductActivity extends AppCompatActivity {
 
 
         //init global params
-        dbref= FirebaseDatabase.getInstance().getReference();
-        fbAuth =FirebaseAuth.getInstance();
-
+        fbStore = FirebaseStorage.getInstance();
+        fbAuth =new FirebaseAuthenticationController();
+        dbController = new FirebaseDB_Controller();
         String fromStrToJason= getIntent().getStringExtra(getString(R.string.the_sell));
         theSell = new Gson().fromJson(fromStrToJason,Sell.class);
 
@@ -92,13 +98,21 @@ public class SellProductActivity extends AppCompatActivity {
         title.setPadding(width/4 ,0 ,0,width/10);
 
         //the image saved in the firebas databas as String , we creat a BitMap  from the String
+
         String imageStr = theSell.getTheProduct().getImage();
-        ImageView productImage = new ImageView(this);
+        productImage = new ImageView(this);
         if (!imageStr.equals("")) {
-            byte[] byteArr = Base64.decode(imageStr, Base64.DEFAULT);
-            Bitmap b = BitmapFactory.decodeByteArray(byteArr, 0, byteArr.length);
-            Bitmap bResize = Bitmap.createScaledBitmap(b, width / 2, height / 4, false);
-            productImage.setImageBitmap(bResize);
+
+            StorageReference storeRef = fbStore.getReferenceFromUrl(getString(R.string.product_path)+theSell.getId()+getString(R.string.jpg));
+            long imageSize =Long.parseLong(theSell.getTheProduct().getImage());
+            storeRef.getBytes(imageSize).addOnSuccessListener(new OnSuccessListener<byte[]>() {
+                @Override
+                public void onSuccess(byte[] bytes) {
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes,0,bytes.length);
+                    Bitmap bResize = Bitmap.createScaledBitmap(bitmap,width/2,height/4,false);
+                    productImage.setImageBitmap(bResize);
+                }
+            });
         }
         currentPrice=theSell.getTheProduct().getCurrentPrice();
 
@@ -113,7 +127,7 @@ public class SellProductActivity extends AppCompatActivity {
         LinearLayout llCategory = makeLinearLayout(getString(R.string.category)+ theSell.getTheProduct().getCategory()
                 ,getString(R.string.sub_category)+ theSell.getTheProduct().getSubCategory(), FONT_SIZE_LABEL, Color.BLACK, Typeface.BOLD);
 
-        tblSellerDetails1 = fillTableRow(getString(R.string.price)+ theSell.getTheProduct().getCurrentPrice()+"  ", getString(R.string.location) + ""
+        tblSellerDetails = fillTableRow(getString(R.string.price)+ theSell.getTheProduct().getCurrentPrice()+"  ", getString(R.string.location) + ""
                 ,FONT_SIZE_LABEL, Color.BLACK, Typeface.BOLD);
 
 
@@ -142,75 +156,32 @@ public class SellProductActivity extends AppCompatActivity {
 
 
         //setting the sub views , get this Sell details from firebas database
-        llSellerDetails2 = makeLinearLayout(getString(R.string.seller_name), getString(R.string.phone)
+        llSellerDetails = makeLinearLayout(getString(R.string.seller_name), getString(R.string.phone)
                 ,FONT_SIZE_LABEL, Color.BLACK, Typeface.BOLD);
-
-        dbref.child(getString(R.string.users)).child(theSell.getTheProduct().getTheSeller()).addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-
-                ArrayList<String> userParams= new ArrayList<>();
-                for (DataSnapshot s : dataSnapshot.getChildren()){
-                    userParams.add(s.getValue(String.class));
-                }
-                theUser= new User(userParams.get(0), userParams.get(1), userParams.get(2), userParams.get(3),
-                        userParams.get(4), userParams.get(5) );
-                if (theUser!=null){
-                    ((TextView) llSellerDetails2.getChildAt(0)).setText(getString(R.string.seller_name)+theUser.getFirstName());
-                    ((TextView) llSellerDetails2.getChildAt(1)).setText(getString(R.string.phone)+theUser.getPhone());
-                    ((TextView) tblSellerDetails1.getChildAt(1)).setText(getString(R.string.location)+theUser.getLocation());
-                }
-            }
-
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
+        dbController.retrieveUsersDetails(this);
 
 
         //check if pass 2 days (48 hours) from create this product , and raise the current price
         // by fit automatic addition(20, 50, 500, 5000)
         Button makeOfferBtn = new Button(this);
-        makeOfferBtn.setText("Offer");
+        makeOfferBtn.setText(getString(R.string.offer));
         makeOfferBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Date finishDate = new Date (theSell.getCreateDate().getTime()+TWO_DAYS);
                 Date currentDate = new Date ();
                 long dif = finishDate.getTime() - currentDate.getTime();
-                if(dif>0) {
+                if(dif>0 && !(theUser.getUserName()+getString(R.string.public_hand_com)).equals(fbAuth.getCurrentUEmail())) {
                     currentPrice += checkNewPrice();
-                    String str = "|" + fbAuth.getCurrentUser().getUid() + "," + currentPrice;
+                    String str = "|" + fbAuth.getCurrentUid() + "," + currentPrice;
                     str += allOffersStr;
-                    dbref.child(theSell.getTheProduct().getCategory()).child(theSell.getTheProduct().getSubCategory())
-                            .child(theSell.getId()).child(getString(R.string.all_offers)).setValue(str);
-                    dbref.child(theSell.getTheProduct().getCategory()).child(theSell.getTheProduct().getSubCategory())
-                            .child(theSell.getId()).child(getString(R.string.the_product)).child(getString(R.string.current_price)).setValue(currentPrice);
+                    dbController.updateAllOffersArray((SellProductActivity) thisActivity, str);
+                    dbController.updateCurrentPrice((SellProductActivity) thisActivity,currentPrice);
                 }
             }
         });
 
-
-        //save the new current highes offer in the firebas database
-        dbref.child(theSell.getTheProduct().getCategory()).child(theSell.getTheProduct().getSubCategory()).child(theSell.getId())
-                .addValueEventListener(new ValueEventListener() {
-               @Override
-               public void onDataChange(DataSnapshot dataSnapshot) {
-                   currentPrice =  dataSnapshot.child(getString(R.string.the_product)).child(getString(R.string.current_price)).getValue(Integer.class);
-                   ((TextView) tblSellerDetails1.getChildAt(0)).setText(getString(R.string.price) +currentPrice+"   ");
-                   makeOfferLbl.setText(getString(R.string.every_offer_raise)+checkNewPrice());
-                   allOffersStr=   dataSnapshot.child(getString(R.string.all_offers)).getValue(String.class);
-
-               }
-
-               @Override
-               public void onCancelled(DatabaseError databaseError) {
-
-               }
-           });
-
+        dbController.updateUsersDetails(this);
 
 
         llMain.addView(title);
@@ -218,8 +189,8 @@ public class SellProductActivity extends AppCompatActivity {
         llMain.addView(llDescription);
         llMain.addView(llCategory);
         tblAllActions.addView(tblDate);
-        tblAllActions.addView(tblSellerDetails1);
-        llMain.addView(llSellerDetails2);
+        tblAllActions.addView(tblSellerDetails);
+        llMain.addView(llSellerDetails);
         llMain.addView(tblAllActions);
         if(dif>0)
              llMain.addView(makeOfferBtn);
@@ -290,12 +261,53 @@ public class SellProductActivity extends AppCompatActivity {
         return ll;
     }
 
+    public User getTheUser(){
+        return  theUser;
+    }
+
+    public  void setUser(User otherUser){
+        theUser = otherUser;
+    }
+
+    public Sell getTheSell(){
+        return theSell;
+    }
+
+    public  LinearLayout getLinearLayout(){
+        return llSellerDetails;
+    }
+
+    public TableRow getTableRow(){
+        return tblSellerDetails;
+    }
+
+    public int getCurrentPrice(){
+        return currentPrice;
+    }
+    public void setCurrentPrice(int newPrice){
+        currentPrice = newPrice;
+    }
+
+    public TableRow getTableRowSellerDetails(){
+        return tblSellerDetails;
+    }
+
+    public TextView getTextView(){
+        return makeOfferLbl;
+    }
+
+    public void setAllOffersStr(String newallOffersStr){
+        allOffersStr=newallOffersStr;
+    }
+
+
+
+
 
     //create tool bar
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.options_menu, menu);
-        return true;
+        return fbAuth.createToolBar(this, menu);
     }
 
 
@@ -307,20 +319,8 @@ public class SellProductActivity extends AppCompatActivity {
         // Handle action bar actions click
 
         super.onOptionsItemSelected(item);
-        if(item.getItemId() == R.id.edit){
-            Intent intentData = new Intent(thisActivity,SettingUserDetailsActivity.class);
-            startActivity(intentData);
-        }
+        return  fbAuth.executeToolBarOption(this,item);
 
-
-        else if(item.getItemId() == R.id.sign_out){
-            fbAuth.signOut();
-            Intent intentData = new Intent(this,LoginActivity.class);
-            intentData.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            finish();
-            startActivity(intentData);
-        }
-        return true;
     }
 
 }

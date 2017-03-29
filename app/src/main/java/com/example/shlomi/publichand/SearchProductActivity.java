@@ -29,8 +29,10 @@ import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 
+import Logic.FirebaseAuthenticationController;
+
 public class SearchProductActivity extends AppCompatActivity {
-    FirebaseAuth fbAuth;
+    FirebaseAuthenticationController fbAuth;
     ArrayAdapter<String> AllCategoriesAdapter, FurnitureAdapter,  JewelryAdapter,
             ElectronicDevicesAdapter,  CellPhonesAdapter, BicyclesAdapter;
     Spinner categorySpn;
@@ -38,7 +40,6 @@ public class SearchProductActivity extends AppCompatActivity {
     TableRow tblCategories, tblSubCategories;
     LinearLayout llPrice;
     TextView errorLbl;
-    final int FIND_MY_SEARCH = 1;
     private int width,height;
     Activity thisActivity= this;
 
@@ -57,7 +58,7 @@ public class SearchProductActivity extends AppCompatActivity {
 
 
         //init global params
-        fbAuth =FirebaseAuth.getInstance();
+        fbAuth =new FirebaseAuthenticationController();
         final int FONT_SIZE_LABEL =height/85;
 
 
@@ -165,7 +166,7 @@ public class SearchProductActivity extends AppCompatActivity {
                     Intent intentData = new Intent(thisActivity,ResultSearchActivity.class);
                     intentData.putExtra(getString(R.string.category_intent),((Spinner) tblCategories.getChildAt(1)).getSelectedItem()+"");
                     intentData.putExtra(getString(R.string.sub_category_intent),((Spinner) tblSubCategories.getChildAt(1)).getSelectedItem()+"");
-                    intentData.putExtra(getString(R.string.type_result),FIND_MY_SEARCH);
+                    intentData.putExtra(getString(R.string.type_result), ResultSearchActivity.SearchType.SEARCH_PRODUCT.ordinal());
                     if (!(((EditText)llPrice.getChildAt(1)).getText()+"").equals(""))
                         intentData.putExtra(getString(R.string.min_price),Integer.parseInt(((TextView)llPrice.getChildAt(1)).getText()+""));
                     if (!(((EditText)llPrice.getChildAt(3)).getText()+"").equals(""))
@@ -290,9 +291,9 @@ public class SearchProductActivity extends AppCompatActivity {
     //create tool bar
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.options_menu, menu);
-        return true;
+        return fbAuth.createToolBar(this, menu);
     }
+
 
 
     //create options in tool bar
@@ -302,20 +303,7 @@ public class SearchProductActivity extends AppCompatActivity {
         // Handle action bar actions click
 
         super.onOptionsItemSelected(item);
-        if(item.getItemId() == R.id.edit){
-            Intent intentData = new Intent(thisActivity,SettingUserDetailsActivity.class);
-            startActivity(intentData);
-        }
-
-
-        else if(item.getItemId() == R.id.sign_out){
-            fbAuth.signOut();
-            Intent intentData = new Intent(this,LoginActivity.class);
-            intentData.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            finish();
-            startActivity(intentData);
-        }
-        return true;
+        return  fbAuth.executeToolBarOption(this,item);
 
     }
 }

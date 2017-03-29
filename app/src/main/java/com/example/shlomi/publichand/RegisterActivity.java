@@ -31,11 +31,11 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+
 
 import java.util.ArrayList;
 
+import Logic.FirebaseDB_Controller;
 import Logic.User;
 
 public class RegisterActivity extends AppCompatActivity {
@@ -43,7 +43,7 @@ public class RegisterActivity extends AppCompatActivity {
     User theUser;
     ProgressDialog progressDialog;
     FirebaseAuth fbAuth;
-    DatabaseReference dbref;
+    FirebaseDB_Controller dbController;
     Activity thisActivity = this;
     TableRow tblRegisterFirstName, tblRegisterLastName, tblRegisterPhone, tblRegisterUserName, tblRegisterPassword,
             tblRegisterConfirmPassword, tblRegisterLocation;
@@ -65,7 +65,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         //init global params
         fbAuth =FirebaseAuth.getInstance();
-        dbref= FirebaseDatabase.getInstance().getReference();
+        dbController = new FirebaseDB_Controller();
         final int FONT_SIZE_LABEL =height/85;
         final int FONT_SIZE_TEXT =2*FONT_SIZE_LABEL/3;
         progressDialog = new ProgressDialog(this);
@@ -141,7 +141,8 @@ public class RegisterActivity extends AppCompatActivity {
                 if(message.equals("")){
                     progressDialog.setMessage(getString(R.string.please_wait));
                     progressDialog.show();
-                    fbAuth.createUserWithEmailAndPassword(theUser.getUserName()+getString(R.string.public_hand_com),theUser.getPassword())
+                    fbAuth.createUserWithEmailAndPassword(theUser.getUserName()
+                            +getString(R.string.public_hand_com),((EditText)tblRegisterPassword.getChildAt(1)).getText()+"")
                             .addOnCompleteListener(thisActivity, new OnCompleteListener<AuthResult>() {
                                 @Override
                                 public void onComplete(@NonNull Task<AuthResult> task) {
@@ -149,12 +150,12 @@ public class RegisterActivity extends AppCompatActivity {
                                     if(task.isSuccessful()){
                                         Intent intentData = new Intent();
                                         setResult(1,intentData);
-                                        dbref.child(getString(R.string.users)).child(task.getResult().getUser().getUid()).setValue(theUser);
+                                        String usersNode =getString(R.string.users);
+                                        dbController.storeUser(task.getResult().getUser().getUid(),theUser,usersNode);
                                         finish();
                                     }
                                     else if (task.getException() instanceof FirebaseAuthUserCollisionException)
                                         messageLbl.setText(getString(R.string.userName_already_exist));
-
                                     else
                                         messageLbl.setText(getString(R.string.login_faild));
                                 }
@@ -274,7 +275,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         if(!password.equals(confirmPassword))
             return valid=7;
-        theUser = new User(firstName,lastName,phone,location,userName,password);
+        theUser = new User(firstName,lastName,phone,location,userName);
 
         return  valid;
     }
@@ -308,7 +309,6 @@ public class RegisterActivity extends AppCompatActivity {
             case 7:
                 message= getString(R.string.please_match_between_password_and_confirm_password);
                 break;
-
         }
         return  message;
     }
